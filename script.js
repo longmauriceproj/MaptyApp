@@ -10,67 +10,81 @@ const inputDistance = document.querySelector('.form__input--distance');
 const inputDuration = document.querySelector('.form__input--duration');
 const inputCadence = document.querySelector('.form__input--cadence');
 const inputElevation = document.querySelector('.form__input--elevation');
-let map, mapEvent;
 
-if (navigator.geolocation)
-  navigator.geolocation.getCurrentPosition(
-    function (position) {
-      console.log(position);
-      const { latitude } = position.coords;
-      const { longitude } = position.coords;
-      //   console.log(`https://www.google.com/maps/@${latitude},${longitude},15z`);
+class App {
+  #map;
+  #mapEvent;
+  constructor() {
+    this.#getPosition();
+    //Event handlers
+    //Form submission
+    form.addEventListener('submit', this.#newWorkout.bind(this));
+    //Drop-down selection
+    inputType.addEventListener('change', this.#toggleElevationField);
+  }
 
-      const coords = [latitude, longitude];
+  #getPosition() {
+    if (navigator.geolocation)
+      navigator.geolocation.getCurrentPosition(
+        this.#loadMap.bind(this),
+        function () {
+          alert(`Could not get your position`);
+        }
+      );
+  }
+  #loadMap(position) {
+    const { latitude } = position.coords;
+    const { longitude } = position.coords;
 
-      map = L.map('map').setView(coords, 15);
+    const coords = [latitude, longitude];
 
-      L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
-        attribution:
-          '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-      }).addTo(map);
+    this.#map = L.map('map').setView(coords, 15);
 
-      //Handling clicks on map
-      map.on('click', function (mapE) {
-        mapEvent = mapE;
-        form.classList.remove('hidden');
-        inputDistance.focus();
-      });
-    },
-    function () {
-      alert(`Could not get your position`);
-    }
-  );
+    L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
+      attribution:
+        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+    }).addTo(this.#map);
 
-//Event handlers
-//Form submission
-form.addEventListener('submit', function (e) {
-  e.preventDefault();
-  //clear input fields
-  inputDistance.value =
-    inputDuration.value =
-    inputCadence.value =
-    inputElevation.value =
-      '';
-  //display marker
-  console.log(mapEvent);
-  const { lat, lng } = mapEvent.latlng;
-  L.marker([lat, lng])
-    .addTo(map)
-    .bindPopup(
-      L.popup({
-        maxWidth: 250,
-        minWidth: 100,
-        autoClose: false,
-        closeOnClick: false,
-        className: 'running-popup',
-      })
-    )
-    .setPopupContent('Test String')
-    .openPopup();
-});
-//Exercise drop-down selection
-inputType.addEventListener('change', function () {
-  //toggle logic for form label
-  inputElevation.closest('.form__row').classList.toggle('form__row--hidden');
-  inputCadence.closest('.form__row').classList.toggle('form__row--hidden');
-});
+    //Handling clicks on map
+    this.#map.on('click', this.#showForm.bind(this));
+  }
+
+  #showForm(mapE) {
+    this.#mapEvent = mapE;
+    form.classList.remove('hidden');
+    inputDistance.focus();
+  }
+
+  #toggleElevationField() {
+    //toggle logic for form label
+    inputElevation.closest('.form__row').classList.toggle('form__row--hidden');
+    inputCadence.closest('.form__row').classList.toggle('form__row--hidden');
+  }
+
+  #newWorkout(e) {
+    e.preventDefault();
+    //Clear input fields
+    inputDistance.value =
+      inputDuration.value =
+      inputCadence.value =
+      inputElevation.value =
+        '';
+    //Display marker
+    const { lat, lng } = this.#mapEvent.latlng;
+    L.marker([lat, lng])
+      .addTo(this.#map)
+      .bindPopup(
+        L.popup({
+          maxWidth: 250,
+          minWidth: 100,
+          autoClose: false,
+          closeOnClick: false,
+          className: 'running-popup',
+        })
+      )
+      .setPopupContent('Test String')
+      .openPopup();
+  }
+}
+
+const app = new App();
